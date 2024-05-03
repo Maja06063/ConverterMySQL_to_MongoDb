@@ -25,7 +25,16 @@ def parse_create_table(query):
         #print("*********THIS******")
         attributes_begin_index = query.find("(") # szuka numeru na którym stoi ( w liście query (bo string to lista znakow)
         attributes_string_list = query[attributes_begin_index+1:-2].split(",") # bierze tylko elementy w nawiasie (+1 i -1 by nie brac nawiasow) i dzieli je po ,
-        
+        for i in range (len(attributes_string_list)-1):
+            if "(" in attributes_string_list[i] and ")" not in attributes_string_list[i]:
+                for j in range(i+1, len(attributes_string_list)):
+                    attributes_string_list[i]+="," + attributes_string_list[j]
+                    attributes_string_list[j]=""
+                    if ")" in attributes_string_list[i+1]:
+                        break
+        attributes_string_list = [i for i in attributes_string_list if i] # usuwanie pustych stringów z listy
+
+
         for attribute_string in attributes_string_list:
 
             attribute_string = attribute_string.strip()

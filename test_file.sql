@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS Tags (
 CREATE TABLE IF NOT EXISTS PostTags (
     post_id INT,
     tag_id INT,
---PRIMARY KEY (post_id, tag_id),
+    PRIMARY KEY (post_id, tag_id),
     FOREIGN KEY (post_id) REFERENCES Posts(post_id),
     FOREIGN KEY (tag_id) REFERENCES Tags(tag_id)
 );
