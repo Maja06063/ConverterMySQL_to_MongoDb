@@ -50,27 +50,84 @@ def parse_create_table(query):
 
 # Funkcja do parsowania instrukcji INSERT INTO
 def parse_insert_into(query):
-    # Wyszukiwanie nazwy tabeli za pomocą wyrażenia regularnego
-    table_name_match = re.search(r'INSERT INTO `([^`]+)`', query)
-    if table_name_match:
-        # Jeśli znajdziemy pasujące grupy, pobieramy nazwę tabeli
-        table_name = table_name_match.group(1)
-        # Wyszukiwanie wartości do wstawienia za pomocą wyrażenia regularnego
-        values_match = re.search(r'VALUES \((.*?)\)', query)
-        if values_match:
-            # Jeśli znajdziemy wartości, dzielimy je i otrzymujemy listę
-            values = values_match.group(1).split(',')
-            # Zwracamy nazwę tabeli i listę wartości
-            return table_name, values
-    # Jeśli nie udało się znaleźć nazwy tabeli lub wartości, zwracamy None
-    return None, None
+
+    #print(query)
+
+    word_list = query.split()
+
+    #SZUKANIE NAZWY TABELI - Jezeli 1 wyraz to insert, 2 into, to 3 to jest nazwa tabeli
+    table_name = ""
+    for i in range(len(word_list)-2):
+        if word_list[i].upper()== 'INSERT' and word_list[i+1].upper() == 'INTO':
+            table_name = word_list[i+2]
+    
+    # podzielenie zapytania na 2 czesci (przed VALUES i po)
+    text_before_values = query.split('VALUES')[0]
+    attibutes_list = text_before_values[text_before_values.find('(')+1:text_before_values.find(')')].split(',')
+    #usuwanie bialych niepotrzebnych znakow w nazwach kolumn
+    for i in range(len(attibutes_list)):
+        attibutes_list[i]=attibutes_list[i].strip()
+    #print(attibutes_list)
+
+
+
+     # podzielenie zapytania na 2 czesci (przed VALUES i po)
+    text_after_values = query.split('VALUES')[1]
+    #print(text_after_values)
+
+    all_records_list = []
+
+    while True:
+
+        begin = text_after_values.find('(')
+        end = text_after_values.find(')')
+
+        if begin == -1 or end == -1:
+            break
+
+        record_string = text_after_values[begin + 1:end]
+        record_list = record_string.split(',')
+
+        #usuwanie bialych niepotrzebnych znakow w nazwach kolumn
+        for i in range(len(record_list)):
+            record_list[i]=record_list[i].strip()
+            if record_list[i][0]=="'" and record_list[i][-1]== "'":
+                record_list[i]=record_list[i][1:-1]
+        all_records_list.append(record_list)
+        
+
+        text_after_values = text_after_values[end+1:]
+        
+
+    records_list = text_after_values.split('),')
+    #print(records_list)
+    print(all_records_list)
+    print(attibutes_list)
+    #print(table_name)
+    exit(0)
+
+    record = {
+        table_name: "", # TODO
+        attributes: {} # TODO
+    }
+
+    attibutes_names = [] # TODO
+    attributes_values = [] # TODO
+
+    # TODO Reszta kodu
+
+
+
+    record[attributes]["test"]
+
+    return record
 
 # Inicjalizacja słowników na strukturę i zawartość tabel
-tables_structure = {}
-tables_content = {}
+tables_structure = {} # słownik
+tables_content = [] # lista
 
 # Wczytanie pliku SQL
-with open('test_file.sql', 'r') as file:
+with open('test_file_INSERT.sql', 'r') as file:
     sql_script = file.read()
 
 # Podział skryptu na instrukcje
@@ -89,7 +146,7 @@ for instruction in sql_instructions:
             instruction += line + "\n"
 
     if instruction.startswith('CREATE TABLE'):
-        #print("Wykryto CREATE TABLE")
+        print("Wykryto CREATE TABLE")
         # Jeśli instrukcja rozpoczyna się od "CREATE TABLE", parsujemy definicję tabeli
         table_name, attributes = parse_create_table(instruction)
         if table_name and attributes:
@@ -98,14 +155,9 @@ for instruction in sql_instructions:
     elif instruction.startswith('INSERT INTO'):
         print("Wykryto INSERT INTO")
         # Jeśli instrukcja rozpoczyna się od "INSERT INTO", parsujemy instrukcję wstawiania
-        table_name, values = parse_insert_into(instruction)
-        if table_name and values:
-            # Jeśli udało się sparsować nazwę tabeli i wartości, dodajemy wartości do słownika tables_content
-            if table_name not in tables_content:
-                # Tworzymy listę wartości dla danej tabeli, jeśli jeszcze jej nie ma
-                tables_content[table_name] = []
-            # Dodajemy wartości do listy dla danej tabeli
-            tables_content[table_name].append(values)
+        record = parse_insert_into(instruction)
+        if record:
+            tables_content.append(record)
 
 # Wyświetlenie wyników
 print("Struktura tabel:")
