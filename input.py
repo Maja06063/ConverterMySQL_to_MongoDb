@@ -48,8 +48,8 @@ def parse_create_table(query):
     # Jeśli nie udało się znaleźć nazwy tabeli, zwracamy None
     return None, None
 
-# Funkcja do parsowania instrukcji INSERT INTO
-def parse_insert_into(query):
+# Funkcja do parsowania instrukcji INSERT INTO zwraca liste
+def parse_insert_into(query) -> list:
 
     #print(query)
 
@@ -99,28 +99,25 @@ def parse_insert_into(query):
         text_after_values = text_after_values[end+1:]
         
 
-    records_list = text_after_values.split('),')
+    #records_list = text_after_values.split('),')
     #print(records_list)
     print(all_records_list)
     print(attibutes_list)
     #print(table_name)
-    exit(0)
 
-    record = {
-        table_name: "", # TODO
-        attributes: {} # TODO
-    }
+    final_list = []
+    for record_list in all_records_list:
 
-    attibutes_names = [] # TODO
-    attributes_values = [] # TODO
+        record = {
+            "table_name": table_name, 
+            "attributes": {} 
+        }
+        for i in range(len(attibutes_list)):
+            record["attributes"][attibutes_list[i]]=record_list[i]
+        
+        final_list.append(record)
 
-    # TODO Reszta kodu
-
-
-
-    record[attributes]["test"]
-
-    return record
+    return final_list
 
 # Inicjalizacja słowników na strukturę i zawartość tabel
 tables_structure = {} # słownik
@@ -155,12 +152,12 @@ for instruction in sql_instructions:
     elif instruction.startswith('INSERT INTO'):
         print("Wykryto INSERT INTO")
         # Jeśli instrukcja rozpoczyna się od "INSERT INTO", parsujemy instrukcję wstawiania
-        record = parse_insert_into(instruction)
-        if record:
-            tables_content.append(record)
+        records = parse_insert_into(instruction)
+        if records:
+            tables_content.extend(records)
 
 # Wyświetlenie wyników
 print("Struktura tabel:")
 print(json.dumps(tables_structure, indent=4))
 print("\nZawartość tabel:")
-print(tables_content)
+print(json.dumps(tables_content, indent=4))
