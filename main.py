@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+Ten program powstał w ramach projektu "Zaawansowane Bazy Danych". Jego celem jest brac pliki SQL
+oraz konwertowac je do skryptow, ktore wykonac mozna w bazie danych MongoDB.
+"""
+
 from sql_parser import SqlParser
 
 import json
