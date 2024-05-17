@@ -12,9 +12,9 @@ INSERT INTO DaneOsobowe (loginn, imie, nazwisko) VALUES
 
 -- Opiekunowie
 INSERT INTO Opiekunowie (rodzaj_opiekuna) VALUES
-('Tata'),
-('Mama'),
-('Dziadek');
+('Rodzic'),
+('Rodzic'),
+('OpiekunPrawny');
 
 -- Miejscowosc
 INSERT INTO Miejscowosc (nazwa) VALUES

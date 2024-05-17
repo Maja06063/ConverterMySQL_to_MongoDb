@@ -171,8 +171,8 @@ class SqlParser():
                 # Jeśli instrukcja rozpoczyna się od "CREATE TABLE", parsujemy definicję tabeli
                 table_name, attributes = self.parse_create_table(instruction)
                 if table_name and attributes:
-                    # Dodajemy informacje o strukturze tabeli do słownika tables_structure
-                    self.ć[table_name] = attributes
+                    # Dodajemy infrmacje o strukturze tabeli do słownika tables_structure
+                    self.tables_structure[table_name] = attributes
 
             elif instruction.startswith('INSERT INTO'):
                 # Jeśli instrukcja rozpoczyna się od "INSERT INTO", parsujemy instrukcję wstawiania
