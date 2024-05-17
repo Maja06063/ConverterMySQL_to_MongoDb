@@ -34,7 +34,7 @@ class SqlParser():
         z niego przydatnych danych.
 
         Paramtry:
-     ś   1. query - tekst bedacy pojedynczym poleceniem SQL - od średnika do średnika.
+        1. query - tekst bedacy pojedynczym poleceniem SQL - od średnika do średnika.
 
         Zwraca:
         1. table_name - nazwa tabeli,
@@ -43,7 +43,7 @@ class SqlParser():
         # Wyszukiwanie nazwy tabeli za pomocą metody split
         table_name = query.split("(")[0].strip().split(" ")[-1]
         if table_name:
-            # Parsowanie atrybutów tabeli również za pomocą splitaś
+            # Parsowanie atrybutów tabeli również za pomocą splita
             attributes = []
             attributes_begin_index = query.find("(") # szuka numeru na którym stoi ( w liście query (bo string to lista znakow)
             attributes_string_list = query[attributes_begin_index+1:-2].split(",") # bierze tylko elementy w nawiasie (+1 i -1 by nie brac nawiasow) i dzieli je po przecinku.
