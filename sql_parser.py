@@ -1,8 +1,11 @@
+import re
+
 class SqlParser():
 
     # Inicjalizacja słownika na strukturę i listy na zawartość tabel
     tables_structure = {} # słownik
     tables_content = [] # lista
+    foreign_keys = []
 
     def get_tables_structure(self) -> dict:
         return self.tables_structure
@@ -10,104 +13,157 @@ class SqlParser():
     def get_tables_content(self) -> list:
         return self.tables_content
 
+    def parse_foreign_key(self, foreign_key_string):
+
+        pattern = r'FOREIGN KEY \((\w+)\) REFERENCES (\w+) \((\w+)\)'
+        match = re.search(pattern, foreign_key_string)
+
+        if match:
+            foreign_key = {}
+            foreign_key['name'] = match.group(1)
+            foreign_key['ref_table'] = match.group(2)
+            foreign_key['ref_name'] = match.group(3)
+            self.foreign_keys.append(foreign_key)
+
+            return foreign_key
+        return None
+
     # Funkcja tekst między przecinkami i zwraca słownik z nazwą i typem zmiennej oraz jej dodatkowymi parametrami
-    def __parse_attribute(self, attribute_string):
+    def parse_attribute(self, attribute_string):
+
+        if "FOREIGN KEY" in attribute_string:
+            return self.parse_foreign_key(attribute_string)
+
         attribute = {}
         attribute["name"] = attribute_string.split(" ")[0]
-        attribute["type"] = attribute_string.split(" ")[1]
-        attribute["info"] = " ".join(attribute_string.split(" ")[2:])
+        attribute["isPrimary"] = "PRIMARY KEY" in attribute_string
 
         return attribute
 
-    # Funkcja do parsowania definicji tabeli
+    def find_table_name(self, query):
+        # Regex pattern to match the table name
+        pattern = r'(CREATE TABLE\s+(IF NOT EXISTS\s+)?|INSERT INTO\s+)(\w+)'
+        match = re.search(pattern, query, re.IGNORECASE)
+
+        return match.group(3)
+
+    def extract_table_attributes(self, query):
+        # Regex pattern to match the part inside the parentheses
+        pattern = r'CREATE TABLE\s+(IF NOT EXISTS\s+)?\w+\s*\((.+)\)'
+        match = re.search(pattern, query, re.IGNORECASE | re.DOTALL)
+
+        attributes_str = match.group(2).strip()
+
+        # Initialize variables
+        attributes = []
+        current_attribute = []
+        inside_parentheses = 0
+
+        # Parse the attributes string
+        for char in attributes_str:
+            if char == ',' and inside_parentheses == 0:
+                # If we are at a comma and not inside parentheses, it's a delimiter
+                attribute_dict = self.parse_attribute(''.join(current_attribute).strip())
+                attributes.append(attribute_dict)
+                current_attribute = []
+            else:
+                if char == '(':
+                    inside_parentheses += 1
+                elif char == ')':
+                    inside_parentheses -= 1
+                current_attribute.append(char)
+
+        # Append the last attribute
+        if current_attribute:
+            attribute_dict = self.parse_attribute(''.join(current_attribute).strip())
+            attributes.append(attribute_dict)
+
+        return attributes
+
     def parse_create_table(self, query):
+        # Funkcja do parsowania definicji tabeli
+        table_name = self.find_table_name(query)
+        attributes = self.extract_table_attributes(query)
 
-        # Wyszukiwanie nazwy tabeli za pomocą metody split
-        table_name = query.split("(")[0].strip().split(" ")[-1]
-        if table_name:
-            # Parsowanie atrybutów tabeli również za pomocą wyrażenia regularnego
-            attributes = []
-            attributes_begin_index = query.find("(") # szuka numeru na którym stoi ( w liście query (bo string to lista znakow)
-            attributes_string_list = query[attributes_begin_index+1:-2].split(",") # bierze tylko elementy w nawiasie (+1 i -1 by nie brac nawiasow) i dzieli je po ,
-            for i in range (len(attributes_string_list)-1):
-                if "(" in attributes_string_list[i] and ")" not in attributes_string_list[i]:
-                    for j in range(i+1, len(attributes_string_list)):
-                        attributes_string_list[i]+="," + attributes_string_list[j]
-                        attributes_string_list[j]=""
-                        if ")" in attributes_string_list[i+1]:
-                            break
-            attributes_string_list = [i for i in attributes_string_list if i] # usuwanie pustych stringów z listy
+        return table_name, attributes
 
+    def extract_insert_attributes(self, query):
+        # Regex pattern to match the attributes part inside the parentheses after INSERT INTO
+        pattern = r'INSERT INTO\s+\w+\s*\(([^)]+)\)'
+        match = re.search(pattern, query, re.IGNORECASE)
 
-            for attribute_string in attributes_string_list:
+        attributes_str = match.group(1).strip()
+        # Split the attributes by comma and strip any extra whitespace
+        attributes = [attr.strip() for attr in attributes_str.split(',')]
 
-                attribute_string = attribute_string.strip()
-                if attribute_string.startswith("PRIMARY KEY") or attribute_string.startswith("FOREIGN KEY"):
-                    continue
+        return attributes
 
-                attributes.append(self.__parse_attribute(attribute_string))
+    def extract_values_from_string(self, values_str):
+        # Split the values by comma, considering quotes for strings
+        values = []
+        current_value = []
+        inside_quotes = False
 
-            # Zwracamy nazwę tabeli i listę atrybutów
-            return table_name, attributes
-        # Jeśli nie udało się znaleźć nazwy tabeli, zwracamy None
-        return None, None
+        for char in values_str:
+            if char == ',' and not inside_quotes:
+                # If we are at a comma and not inside quotes, it's a delimiter
+                value = ''.join(current_value).strip()
+                # Remove enclosing quotes
+                if value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1]
+                elif value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+                values.append(value)
+                current_value = []
+            else:
+                if char in ("'", '"'):
+                    inside_quotes = not inside_quotes
+                current_value.append(char)
 
-    def __parse_text_after_values_keyword(self, text_after_values) -> list:
+        # Append the last value
+        if current_value:
+            value = ''.join(current_value).strip()
+            # Remove enclosing quotes
+            if value.startswith("'") and value.endswith("'"):
+                value = value[1:-1]
+            elif value.startswith('"') and value.endswith('"'):
+                value = value[1:-1]
+            values.append(value)
 
-        all_records_list = []
-        while True:
+        return values
 
-            begin = text_after_values.find('(')
-            end = text_after_values.find(')')
+    def extract_insert_values(self, query):
+        # Regex pattern to match the values part inside the parentheses after VALUES
+        pattern = r'VALUES\s*\(([^)]+)\)(?:\s*,\s*\(([^)]+)\))*'
+        matches = re.finditer(pattern, query, re.IGNORECASE)
 
-            if begin == -1 or end == -1:
-                break
+        all_values = []
 
-            record_string = text_after_values[begin + 1:end]
-            record_list = record_string.split(',')
+        for match in matches:
+            for group_num in range(1, len(match.groups()) + 1):
+                values_str = match.group(group_num)
+                if values_str:
 
-            #usuwanie bialych niepotrzebnych znakow w nazwach kolumn
-            for i in range(len(record_list)):
-                record_list[i]=record_list[i].strip()
-                if record_list[i][0]=="'" and record_list[i][-1]== "'":
-                    record_list[i]=record_list[i][1:-1]
-            all_records_list.append(record_list)
+                    values = self.extract_values_from_string(values_str)
+                    all_values.append(values)
 
-            text_after_values = text_after_values[end+1:]
+        return all_values
 
-        return all_records_list
-
-    # Funkcja do parsowania instrukcji INSERT INTO zwraca liste
     def parse_insert_into(self, query) -> list:
-
-        word_list = query.split()
-
-        #SZUKANIE NAZWY TABELI - Jezeli 1 wyraz to insert, 2 into, to 3 to jest nazwa tabeli
-        table_name = ""
-        for i in range(len(word_list)-2):
-            if word_list[i].upper()== 'INSERT' and word_list[i+1].upper() == 'INTO':
-                table_name = word_list[i+2]
-
-        # podzielenie zapytania na 2 czesci (przed VALUES i po)
-        text_before_values = query.split('VALUES')[0]
-        attibutes_list = text_before_values[text_before_values.find('(')+1:text_before_values.find(')')].split(',')
-        #usuwanie bialych niepotrzebnych znakow w nazwach kolumn
-        for i in range(len(attibutes_list)):
-            attibutes_list[i]=attibutes_list[i].strip()
-
-        # podzielenie zapytania na 2 czesci (przed VALUES i po)
-        text_after_values = query.split('VALUES')[1]
-        all_records_list = self.__parse_text_after_values_keyword(text_after_values)
+        # Funkcja do parsowania instrukcji INSERT INTO zwraca liste
+        table_name = self.find_table_name(query)
+        attibutes_list = self.extract_insert_attributes(query)
+        values_list = self.extract_insert_values(query)
 
         final_list = []
-        for record_list in all_records_list:
+        for current_value in values_list:
 
             record = {
                 "table_name": table_name,
                 "attributes": {}
             }
             for i in range(len(attibutes_list)):
-                record["attributes"][attibutes_list[i]]=record_list[i]
+                record["attributes"][attibutes_list[i]]=current_value[i]
 
             final_list.append(record)
 
@@ -141,3 +197,7 @@ class SqlParser():
                 records = self.parse_insert_into(instruction)
                 if records:
                     self.tables_content.extend(records)
+
+
+if __name__ == "__main__":
+    print("To jest plik klasy SqlParser. Uruchom proszę skrypt parse_sql.")
