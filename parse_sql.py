@@ -14,8 +14,8 @@ if __name__ == "__main__":
         exit(2)
 
     norm_level = int(sys.argv[1])
-    if norm_level < 1 and norm_level > 3:
-        print("Błędny poziom normalizacji")
+    if norm_level < 1 and norm_level > 2:
+        print("Błędny poziom normalizacji, poprawne to 1 lub 2")
         exit(1)
 
     parser = SqlParser()

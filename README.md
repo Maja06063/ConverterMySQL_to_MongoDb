@@ -51,7 +51,7 @@ python create_mongodb_from_json.py <JSON file>
 
 for example:
 ```Bash
-python create_mongodb_from_json.py normalized_1.json
+python create_mongodb_from_json.py normalized_1.json | more
 ```
 
 In result the data from JSON will be uploaded to local MongoDb.
