@@ -34,7 +34,7 @@ python parse_sql.py <SQL files>
 
 for example:
 ```Bash
-python parse_sql.py 1 *.sql
+python parse_sql.py *.sql
 ```
 
 The following result files should be created:
