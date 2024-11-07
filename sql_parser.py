@@ -134,26 +134,25 @@ class SqlParser():
 
     def extract_insert_values(self, query):
         # Regex pattern to match the values part inside the parentheses after VALUES
-        pattern = r'VALUES\s*\(([^)]+)\)(?:\s*,\s*\(([^)]+)\))*'
+        pattern = r'\(\s*([^)]+?)\s*\)'
         matches = re.finditer(pattern, query, re.IGNORECASE)
 
         all_values = []
 
         for match in matches:
-            for group_num in range(1, len(match.groups()) + 1):
-                values_str = match.group(group_num)
-                if values_str:
+            values_str = match.group(1)
+            if values_str:
 
-                    values = self.extract_values_from_string(values_str)
-                    all_values.append(values)
+                values = self.extract_values_from_string(values_str)
+                all_values.append(values)
 
         return all_values
 
-    def parse_insert_into(self, query) -> list:
+    def parse_insert_into(self, query: str) -> list:
         # Funkcja do parsowania instrukcji INSERT INTO zwraca liste
         table_name = self.find_table_name(query)
         attibutes_list = self.extract_insert_attributes(query)
-        values_list = self.extract_insert_values(query)
+        values_list = self.extract_insert_values(query[query.upper().find("VALUES"):])
 
         final_list = []
         for current_value in values_list:
