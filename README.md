@@ -29,7 +29,7 @@ brew services start mongodb-community
 
 Use `parse_sql.py` script:
 ```Bash
-python parse_sql.py <normalization_number> <SQL files>
+python parse_sql.py <SQL files>
 ```
 
 for example:

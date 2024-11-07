@@ -9,11 +9,11 @@ import sys
 if __name__ == "__main__":
 
     # Weryfikacja, czy podano pliki jako parametry programu:
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         print("Nie podano plików SQL")
         exit(2)
 
-    norm_level = int(sys.argv[1])
+    norm_level = 1
     if norm_level < 1 and norm_level > 2:
         print("Błędny poziom normalizacji, poprawne to 1 lub 2")
         exit(1)
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser = SqlParser()
 
     # Wczytanie i parsowanie plików SQL:
-    for filename in sys.argv[2:]:
+    for filename in sys.argv[1:]:
         with open(filename, 'r') as file:
             sql_script = file.read()
             parser.parse(sql_script)
